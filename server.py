@@ -1,45 +1,73 @@
-import socket, threading                                                #Libraries import
-
-host = '127.0.0.1'                                                      #LocalHost
-port = 8080                                                             #Choosing unreserved port
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)              #socket initialization
-server.bind((host, port))                                               #binding host and port to socket
-server.listen()
-
-clients = []
-nicknames = []
-
-def broadcast(message):                                                 #broadcast function declaration
-    for client in clients:
-        client.send(message)
-
-def handle(client):                                         
+# Python program to implement server side of chat room.
+import socket
+import select
+import sys
+'''Replace "thread" with "_thread" for python 3'''
+from thread import *
+ 
+"""The first argument AF_INET is the address domain of the
+socket. This is used when we have an Internet Domain with
+any two hosts The second argument is the type of socket.
+SOCK_STREAM means that data or characters are read in
+a continuous flow."""
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+ 
+# checks whether sufficient arguments have been provided
+if len(sys.argv) != 3:
+    print ("Correct usage: script, IP address, port number")
+    exit()
+ 
+# takes the first argument from command prompt as IP address
+IP_address = str(sys.argv[1])
+ 
+# takes second argument from command prompt as port number
+Port = int(sys.argv[2])
+ 
+"""
+binds the server to an entered IP address and at the
+specified port number.
+The client must be aware of these parameters
+"""
+server.bind((IP_address, Port))
+ 
+"""
+listens for 100 active connections. This number can be
+increased as per convenience.
+"""
+server.listen(100)
+ 
+list_of_clients = []
+ 
+def clientthread(conn, addr):
+ 
+    # sends a message to the client whose user object is conn
+    conn.send("Welcome to this chatroom!")
+ 
     while True:
-        try:                                                            #recieving valid messages from client
-            message = client.recv(1024)
-            broadcast(message)
-        except:                                                         #removing clients
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            nickname = nicknames[index]
-            broadcast('{} left!'.format(nickname).encode('ascii'))
-            nicknames.remove(nickname)
-            break
-
-def receive():                                                          #accepting multiple clients
-    while True:
-        client, address = server.accept()
-        print("Connected with {}".format(str(address)))       
-        client.send('NICKNAME'.encode('ascii'))
-        nickname = client.recv(1024).decode('ascii')
-        nicknames.append(nickname)
-        clients.append(client)
-        print("Nickname is {}".format(nickname))
-        broadcast("{} joined!".format(nickname).encode('ascii'))
-        client.send('Connected to server!'.encode('ascii'))
-        thread = threading.Thread(target=handle, args=(client,))
-        thread.start()
-
-receive()
+            try:
+                message = conn.recv(2048)
+                if message:
+ 
+                    """prints the message and address of the
+                    user who just sent the message on the server
+                    terminal"""
+                    print ("<" + addr[0] + "> " + message)
+ 
+                    # Calls broadcast function to send message to all
+                    message_to_send = "<" + addr[0] + "> " + message
+                    broadcast(message_to_send, conn)
+ 
+                else:
+                    """message may have no content if the connection
+                    is broken, in this case we remove the connection"""
+                    remove(conn)
+ 
+            except:
+                continue
+ 
+"""Using the below function, we broadcast the message to all
+clients who's object is not the same as the one sending
+the message """
+def broadcast(message, connection):
+    for clients in 
