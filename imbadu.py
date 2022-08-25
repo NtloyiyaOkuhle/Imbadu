@@ -1,23 +1,27 @@
-import socket
-import os
-import subprocess
+import socket, threading
+nickname = input("Choose your nickname: ")
 
-s = socket.socket()
-host = '127.0.0.1'
-port = 9999
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)      #socket initialization
+client.connect(('127.0.0.1', 8080))                             #connecting client to server
 
-s.connect((host, port))
+def receive():
+    while True:                                                 #making valid connection
+        try:
+            message = client.recv(1024).decode('ascii')
+            if message == 'NICKNAME':
+                client.send(nickname.encode('ascii'))
+            else:
+                print(message)
+        except:                                                 #case on wrong ip/port details
+            print("An error occured!")
+            client.close()
+            break
+def write():
+    while True:                                                 #message layout
+        message = '{}: {}'.format(nickname, input(''))
+        client.send(message.encode('ascii'))
 
-while True:
-    data = s.recv(1024)
-    if data[:2].decode("utf-8") == 'cd':
-        os.chdir(data[3:].decode("utf-8"))
-
-    if len(data) > 0:
-        cmd = subprocess.Popen(data[:].decode("utf-8"),shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        output_byte = cmd.stdout.read() + cmd.stderr.read()
-        output_str = str(output_byte,"utf-8")
-        currentWD = os.getcwd() + "> "
-        s.send(str.encode(output_str + currentWD))
-
-        print(output_str)
+receive_thread = threading.Thread(target=receive)               #receiving multiple messages
+receive_thread.start()
+write_thread = threading.Thread(target=write)                   #sending messages 
+write_thread.start()
