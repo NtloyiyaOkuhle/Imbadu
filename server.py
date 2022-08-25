@@ -3,7 +3,7 @@ import select
 
 HEADER_LENGTH = 10
 
-IP = ''
+IP = socket.gethostname()
 PORT = 1234
 
 # Create a socket
